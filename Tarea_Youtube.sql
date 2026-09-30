@@ -9,90 +9,161 @@ DROP TABLE ME_GUSTA CASCADE CONSTRAINTS;
 DROP TABLE LISTA_DE_REPRODUCCION CASCADE CONSTRAINTS;
 DROP TABLE TIPO_MEMBRESIA CASCADE CONSTRAINTS;
 DROP TABLE MEMBRESIA CASCADE CONSTRAINTS;
-
-CREATE TABLE TIPO_VIDEO(
-    id_tipo_video NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    nombre VARCHAR2(100)
-);
-
-CREATE TABLE VIDEO(
-    id_video NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    titulo VARCHAR2(200) NOT NULL,
-    descripcion VARCHAR2(200),
-    me_gusta_activados CHAR(1),
-    comentarios_activados CHAR(1),
-    esta_monetizado CHAR(1),
-    duracion NUMBER,
-    id_tipo_video NUMBER REFERENCES TIPO_VIDEO(id_tipo_video)
-    --fk canal
-    --fk visibilidad publico privado oculto
-    --fk estado procesando publicado eliminado
-    --restriccion de edad
-);
-
-CREATE TABLE USUARIO(
-    id_usuario NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    nombre VARCHAR2(50) NOT NULL UNIQUE,
-    email VARCHAR2(100) NOT NULL UNIQUE,
-    fecha_de_nacimiento DATE,
-    esta_verificado CHAR(1)
-);
-
-CREATE TABLE CANAL(
-    id_canal NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    nombre VARCHAR2(50) NOT NULL,
-    descripcion VARCHAR2(300),
-    esta_verificado CHAR(1),
-    esta_monetizado CHAR(1)
-);
-
-CREATE TABLE SUSCRIPCION(
-    id_suscripcion NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY
-    --fk usuario
-    --fk canal
-);
-
-CREATE TABLE COMENTARIO(
-    id_comentario NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    texto VARCHAR2(300) NOT NULL,
-    fecha DATE
-    --fk usuario
-    --fk video
-    --fk respuesta a comentario
-);
-
-CREATE TABLE TIPO_ME_GUSTA(
-    id_tipo_me_gusta NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    nombre VARCHAR2(20) --me gusta, no me gusta
-);
-
-CREATE TABLE ME_GUSTA(
-    id_me_gusta NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    id_tipo_me_gusta REFERENCES TIPO_ME_GUSTA(id_tipo_me_gusta)
-    --fk usuario
-    --fk video
-);
-
-CREATE TABLE LISTA_DE_REPRODUCCION(
-    id_lista_de_reproduccion NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    nombre VARCHAR2(50) NOT NULL,
-    fecha_creacion DATE
-    --visibilidad
-    --fk video
-    --fk usuario
-);
+DROP TABLE TIPO_ESTADO_MEMBRESIA CASCADE CONSTRAINTS;
+DROP TABLE TIPO_VISIBILIDAD CASCADE CONSTRAINTS;
+DROP TABLE PUBLICACION CASCADE CONSTRAINTS;
+DROP TABLE TIPO_ESTADO_VIDEO CASCADE CONSTRAINTS;
 
 CREATE TABLE TIPO_MEMBRESIA(
     id_tipo_membresia NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    nombre VARCHAR2(100),
+    plan VARCHAR2(100),
     precio NUMBER
+);
+
+CREATE TABLE TIPO_ESTADO_MEMBRESIA(
+    id_tipo_estado_membresia NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    estado VARCHAR2(30)
 );
 
 CREATE TABLE MEMBRESIA(
     id_membresia NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     fecha_inicio DATE,
     fecha_termino DATE,
-    id_tipo_membresia REFERENCES TIPO_MEMBRESIA(id_tipo_membresia)
-    --estado
+    id_tipo_membresia NUMBER REFERENCES TIPO_MEMBRESIA(id_tipo_membresia),
+    id_tipo_estado_membresia NUMBER REFERENCES TIPO_ESTADO_MEMBRESIA(id_tipo_estado_membresia)
 );
+
+CREATE TABLE TIPO_ESTADO_VIDEO(
+    id_tipo_estado_video NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    estado VARCHAR2(30)
+);
+
+CREATE TABLE TIPO_VIDEO(
+    id_tipo_video NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nombre VARCHAR2(100)
+);
+
+CREATE TABLE TIPO_VISIBILIDAD(
+    id_tipo_visibilidad NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    visilidad VARCHAR2(30)
+);
+
+CREATE TABLE USUARIO(
+    id_usuario NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nombre VARCHAR2(50) NOT NULL,
+    email VARCHAR2(100) NOT NULL UNIQUE,
+    contrasena VARCHAR2(25),
+    fecha_de_nacimiento DATE,
+    esta_verificado CHAR(1),
+    fecha_creacion TIMESTAMP DEFAULT SYSTIMESTAMP,
+    id_membresia NUMBER REFERENCES MEMBRESIA(id_membresia)
+);
+
+CREATE TABLE CANAL(
+    id_canal NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nombre VARCHAR2(50) NOT NULL,
+    descripcion VARCHAR2(250),
+    esta_verificado CHAR(1),
+    esta_monetizado CHAR(1),
+    fecha_creacion TIMESTAMP,
+    id_usuario NUMBER REFERENCES USUARIO(id_usuario)
+);
+
+CREATE TABLE PUBLICACION(
+    id_publicacion NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    contenido VARCHAR2(250),
+    fecha_creacion TIMESTAMP,
+    id_usuario NUMBER REFERENCES USUARIO(id_usuario),
+    id_canal NUMBER REFERENCES CANAL(id_canal)
+);
+
+CREATE TABLE VIDEO(
+    id_video NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    titulo VARCHAR2(200) NOT NULL,
+    descripcion VARCHAR2(200),
+    me_gusta_activados CHAR(1) NOT NULL CHECK (me_gusta_activados in ('S', 'N')),
+    comentarios_activados CHAR(1),
+    esta_monetizado CHAR(1),
+    duracion NUMBER,
+    url_video VARCHAR2(200),
+    fecha_publicacion TIMESTAMP,
+    id_tipo_video NUMBER REFERENCES TIPO_VIDEO(id_tipo_video),
+    id_canal NUMBER REFERENCES CANAL(id_canal),
+    id_tipo_visibilidad NUMBER REFERENCES TIPO_VISIBILIDAD(id_tipo_visibilidad),
+    id_tipo_estado_video NUMBER REFERENCES TIPO_ESTADO_VIDEO(id_tipo_estado_video)
+    --restriccion de edad
+);
+
+CREATE TABLE SUSCRIPCION(
+    id_suscripcion NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_canal NUMBER REFERENCES CANAL(id_canal),
+    id_usuario NUMBER REFERENCES USUARIO(id_usuario)
+);
+
+CREATE TABLE COMENTARIO(
+    id_comentario NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    texto VARCHAR2(250) NOT NULL,
+    fecha DATE,
+    id_usuario NUMBER REFERENCES USUARIO(id_usuario),
+    id_video NUMBER REFERENCES VIDEO(id_video)
+    --fk respuesta a comentario
+);
+
+CREATE TABLE TIPO_ME_GUSTA(
+    id_tipo_me_gusta NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nombre VARCHAR2(20)
+);
+
+CREATE TABLE ME_GUSTA(
+    id_me_gusta NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_tipo_me_gusta NUMBER REFERENCES TIPO_ME_GUSTA(id_tipo_me_gusta),
+    id_usuario NUMBER REFERENCES USUARIO(id_usuario),
+    id_video NUMBER REFERENCES VIDEO(id_video)
+);
+
+CREATE TABLE LISTA_DE_REPRODUCCION(
+    id_lista_de_reproduccion NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nombre VARCHAR2(50) NOT NULL,
+    fecha_creacion DATE,
+    id_usuario NUMBER REFERENCES USUARIO(id_usuario),
+    id_tipo_visibilidad NUMBER REFERENCES TIPO_VISIBILIDAD(id_tipo_visibilidad),
+    id_video NUMBER REFERENCES VIDEO(id_video)
+);
+
+
+INSERT INTO TIPO_VIDEO(nombre) VALUES('Short');
+INSERT INTO TIPO_VIDEO(nombre) VALUES('En Vivo');
+INSERT INTO TIPO_VIDEO(nombre) VALUES('Regular');
+COMMIT;
+
+INSERT INTO TIPO_ME_GUSTA(nombre) VALUES('Me Gusta');
+INSERT INTO TIPO_ME_GUSTA(nombre) VALUES('No Me Gusta');
+COMMIT;
+
+INSERT INTO TIPO_VISIBILIDAD(visilidad) VALUES('Privado');
+INSERT INTO TIPO_VISIBILIDAD(visilidad) VALUES('Público');
+INSERT INTO TIPO_VISIBILIDAD(visilidad) VALUES('Oculto');
+INSERT INTO TIPO_VISIBILIDAD(visilidad) VALUES('Programado');
+COMMIT;
+
+INSERT INTO TIPO_ESTADO_MEMBRESIA(estado) VALUES('Activo');
+INSERT INTO TIPO_ESTADO_MEMBRESIA(estado) VALUES('Inactivo');
+COMMIT;
+
+INSERT INTO TIPO_ESTADO_VIDEO(estado) VALUES('Procesando');
+INSERT INTO TIPO_ESTADO_VIDEO(estado) VALUES('Publicado');
+INSERT INTO TIPO_ESTADO_VIDEO(estado) VALUES('Eliminado');
+COMMIT;
+
+INSERT INTO TIPO_MEMBRESIA(plan, precio) VALUES('Básico', 0);
+INSERT INTO TIPO_MEMBRESIA(plan, precio) VALUES('Individual', 7000);
+INSERT INTO TIPO_MEMBRESIA(plan, precio) VALUES('Familiar', 12000);
+INSERT INTO TIPO_MEMBRESIA(plan, precio) VALUES('Esudiante', 3500);
+INSERT INTO TIPO_MEMBRESIA(plan, precio) VALUES('Anual', 70000);
+INSERT INTO TIPO_MEMBRESIA(plan, precio) VALUES('Lite', 4500);
+COMMIT;
+
+SELECT * FROM TIPO_MEMBRESIA;
+
+
 
